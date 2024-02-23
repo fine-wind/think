@@ -9,26 +9,25 @@ import java.util.concurrent.*;
  */
 @Slf4j
 public class ThreadPoolUtil {
-    static final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     /**
-     * 默认等待时长 ms
+     * 虚拟线程池
      */
-    private static long sleepTime = 100;
+    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
+
 
     public static void submitScheduled(Runnable task) {
         executor.submit(task);
     }
 
     public static void sleep() {
-        sleep(100);
+        sleep(10);
     }
 
     public static void sleep(long time) {
         try {
-            Thread.sleep(sleepTime);
-        } catch (InterruptedException ignored) {
+            Thread.sleep(time);
+        } catch (InterruptedException e) {
+            log.error("报错了", e);
         }
-        long sleepTime1 = sleepTime + time;
-        sleepTime = sleepTime1 >= 3000 ? time : sleepTime1;
     }
 }

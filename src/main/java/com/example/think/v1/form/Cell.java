@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -12,7 +13,7 @@ import java.util.*;
  * 每个细胞都可能会连接上多个下级
  */
 @Accessors(chain = true)
-public class Cell {
+public class Cell implements Serializable {
     /**
      * 细胞标识
      */
@@ -50,7 +51,7 @@ public class Cell {
         Message first = this.signals.getFirst();
         if (Objects.nonNull(first)) {
             // todo 处理信号并传递给下一个神经元
-            // 多个消息可能重叠从而引起线性思维
+            // 多个消息可能重叠从而引发关联性思维
             for (int i = 0; i < xl && i < this.signals.size(); i++) {
                 Message message = this.signals.get(i);
             }

@@ -1,12 +1,13 @@
 package com.example.think.utils;
 
-import com.example.think.v0.config.Configs;
+import com.alibaba.fastjson2.JSON;
+import com.example.think.config.Configs;
 import com.example.think.v1.form.Entity;
+import com.example.think.v1.form.Link;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.charset.Charset;
 import java.util.*;
 
 @Slf4j
@@ -26,16 +27,21 @@ public class BrainUtil {
      */
     public static Runnable saveBrain(final Entity entity) {
         return () -> {
-            long l1 = System.currentTimeMillis();
-
-            String filePath = directoryPath + DateUtil.nowStr() + bj;
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-               // todo writer.write(JSON.toJSONString(entity));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            //noinspection InfiniteLoopStatement
+            while (true) {
+                ThreadPoolUtil.sleep(1000 * 60 * 5);// 5分钟
+                long l1 = System.currentTimeMillis();
+                String filePath = directoryPath + DateUtil.nowStr() + bj;
+                // 序列化对象到文件
+                String jsonString = JSON.toJSONString(entity);
+                File fileNamePattern = new File(filePath);
+                try (FileWriter fw = new FileWriter(fileNamePattern, Charset.defaultCharset())) {
+                    fw.write(jsonString);
+                } catch (IOException e) {
+                    log.error("记录快照失败", e);
+                }
+                log.debug("记录一次脑快照 耗时 {}", DateUtil.time(System.currentTimeMillis() - l1));
             }
-            long arg = System.currentTimeMillis() - l1;
-            log.debug("记录一次脑快照 耗时{}", arg < 1000 ? arg + "ms" : (arg / 1000 + "s") + (arg % 1000 + "ms"));
         };
     }
 
@@ -51,9 +57,9 @@ public class BrainUtil {
                 log.info("仓库初始化成功");
             }
         }
-        Entity entity;
-        if (!folder.isDirectory()) {
-            return null;
+
+        if (!folder.isDirectory() && folder.delete()) {
+            log.info("删除不合规文件");
         }
         File[] files = folder.listFiles();
         assert files != null;
@@ -78,25 +84,27 @@ public class BrainUtil {
         File file = list.get(0);
         log.info("自动选择第一个：{}", file.getName());
         /* 初始化实体*/
-        entity = read(file);
-        return entity;
+        return read(file);
     }
 
     private static Entity read(File file) {
         log.info("正在加载数据...");
+        long l = System.currentTimeMillis();
         if (file.canRead()) {
-            String s;
-            try {
-                s = Files.readString(Paths.get(file.getAbsolutePath()));
+            String path = file.getAbsolutePath();
+            Entity entity;
+
+            // 反序列化对象
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(path))) {
+                entity = JSON.parseObject(ois, Entity.class);
             } catch (IOException e) {
-                log.error("出现错误");
+                log.error("加载 {} 出现错误", path, e);
                 throw new RuntimeException(e);
             }
-            Entity entity = null;// todo JSON.parseObject(s, Entity.class);
-            log.info("数据加载加载完毕");
+            log.info("数据加载加载完毕 {}", DateUtil.time(System.currentTimeMillis() - l));
             return entity;
         }
-        return null;
+        throw new RuntimeException("无法读取模型文件");
     }
 
     /**
@@ -106,6 +114,33 @@ public class BrainUtil {
      * @return 线程
      */
     public static Runnable log(final Entity entity) {
-        return () -> log.debug("总线程 {} 总细胞 {}", Thread.activeCount(), entity.getCells().size());
+        return () -> {
+            //noinspection InfiniteLoopStatement
+            while (true) {
+                log.debug("总线程 {} 总细胞 {}", Thread.activeCount(), entity.getCells().size());
+                ThreadPoolUtil.sleep(5000);
+            }
+        };
+    }
+
+    /**
+     * todo 检查个体细胞链接问题，避免出现分离
+     *
+     * @param entity 个体
+     */
+    public static void checkBrainLink(Entity entity) {
+        /* 所有的链接信息*/
+        Set<Integer> integers = new HashSet<>(entity.getLinks().keySet());
+        removeLink(entity, Entity.BOOT, integers);
+        for (Integer integer : integers) {
+            entity.getLinks().remove(integer);
+        }
+    }
+
+    private static void removeLink(Entity entity, Integer cellId, Set<Integer> cellIds) {
+        for (Link link : entity.getLinks().get(cellId)) {
+            removeLink(entity, link.getCellId(), cellIds);
+            cellIds.remove(link.getCellId());
+        }
     }
 }

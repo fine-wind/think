@@ -2,26 +2,23 @@ package com.example.think.v1.form;
 
 import com.example.think.utils.RandomUtil;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-import java.util.Objects;
+import java.io.Serializable;
 
 /**
  * 连接
  */
 @Data
 @Accessors(chain = true)
-public class Link {
+@NoArgsConstructor
+public class Link implements Serializable {
     private Integer cellId;
     /**
      * todo 连接紧密度
      */
     private Double jm = 0d;
-
-    public Link() {
-    }
 
     public Link(int cellId) {
         this.cellId = cellId;

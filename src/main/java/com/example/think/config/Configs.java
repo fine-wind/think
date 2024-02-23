@@ -1,4 +1,4 @@
-package com.example.think.v0.config;
+package com.example.think.config;
 
 /**
  * 全局配置
@@ -11,6 +11,7 @@ public interface Configs {
     /**
      * 视窗的边长
      */
-    int WINDOW_LENGTH = 1000;
+    int WINDOW_WIDE = 300;
+    int WINDOW_HIGH = 700;
 
 }
